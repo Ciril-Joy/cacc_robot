@@ -1,7 +1,7 @@
 #define RPWM 5  // Right PWM (Drive Motor)
 #define LPWM 6  // Left PWM (Drive Motor)
-#define REN 7   // Right Enable (Drive Motor)
-#define LEN 8   // Left Enable (Drive Motor)
+#define REN 8   // Right Enable (Drive Motor)
+#define LEN 7   // Left Enable (Drive Motor)
 
 #define sLPWM 9  // Steering Left PWM signal
 #define sRPWM 10 // Steering Right PWM signal
