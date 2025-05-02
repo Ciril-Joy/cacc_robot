@@ -40,22 +40,22 @@ void controlMotors(char command) {
     int steer_speed = 100; // Steering motor speed
 
     switch (command) {
-        case 'o': // Move Forward
+        case 'i': // Move Forward
             analogWrite(RPWM, speed);
             //analogWrite(LPWM, 0);
             break;
-        case '>': // Move Backward
+        case '<': // Move Backward
             analogWrite(RPWM, 0);
             analogWrite(LPWM, speed);
             break;
-        case 'k': // Turn Left (Brief Steering Adjustment)
+        case 'j': // Turn Left (Brief Steering Adjustment)
             digitalWrite(sLPWM, HIGH);
             digitalWrite(sRPWM, LOW);
             analogWrite(sLPWM, steer_speed);
             delay(500); // Adjust based on testing
             analogWrite(sLPWM, 0);
             break;
-        case ';': // Turn Right (Brief Steering Adjustment)
+        case 'l': // Turn Right (Brief Steering Adjustment)
             digitalWrite(sLPWM, LOW);
             digitalWrite(sRPWM, HIGH);
             analogWrite(sRPWM, steer_speed);
