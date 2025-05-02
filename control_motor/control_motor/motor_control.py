@@ -15,18 +15,18 @@ class MotorControlNode(Node):
         angular = msg.angular.z
 
         if angular > 0:
-            self.serial_port.write(b'a')  # Turn Left
-            print('a')
+            self.serial_port.write(b'k')  # Turn Left
+            print('k')
         elif angular < 0:
-            self.serial_port.write(b'd')  # Turn Right
-            print('d')
+            self.serial_port.write(b';')  # Turn Right
+            print(';')
 
         if linear > 0:
-            self.serial_port.write(b'w')  # Forward
-            print('w')
+            self.serial_port.write(b'o')  # Forward
+            print('o')
         elif linear < 0:
-            print('s')
-            self.serial_port.write(b's')  # Backward
+            print('>')
+            self.serial_port.write(b'>')  # Backward
         elif linear == 0 and angular == 0:
             print('x')
             self.serial_port.write(b'x')  # Stop
