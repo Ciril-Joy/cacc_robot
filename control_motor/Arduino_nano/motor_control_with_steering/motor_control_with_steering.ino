@@ -1,5 +1,5 @@
-#define RPWM 5  // Right PWM (Drive Motor)
-#define LPWM 6  // Left PWM (Drive Motor)
+#define RPWM 3  // Right PWM (Drive Motor)
+#define LPWM 4  // Left PWM (Drive Motor)
 #define REN 7   // Right Enable (Drive Motor)
 #define LEN 8   // Left Enable (Drive Motor)
 
@@ -40,22 +40,22 @@ void controlMotors(char command) {
     int steer_speed = 100; // Steering motor speed
 
     switch (command) {
-        case 'i': // Move Forward
+        case 'w': // Move Forward
             analogWrite(RPWM, speed);
             analogWrite(LPWM, 0);
             break;
-        case '<': // Move Backward
+        case 's': // Move Backward
             analogWrite(RPWM, 0);
             analogWrite(LPWM, speed);
             break;
-        case 'j': // Turn Left (Brief Steering Adjustment)
+        case 'a': // Turn Left (Brief Steering Adjustment)
             digitalWrite(sLPWM, HIGH);
             digitalWrite(sRPWM, LOW);
             analogWrite(sLPWM, steer_speed);
             delay(1000); // Adjust based on testing
             analogWrite(sLPWM, 0);
             break;
-        case 'l': // Turn Right (Brief Steering Adjustment)
+        case 'd': // Turn Right (Brief Steering Adjustment)
             digitalWrite(sLPWM, LOW);
             digitalWrite(sRPWM, HIGH);
             analogWrite(sRPWM, steer_speed);

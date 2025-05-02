@@ -23,16 +23,16 @@ class MotorControlNode(Node):
         cmd = None
 
         if linear > 0:
-            cmd = b'o'  # Forward
+            cmd = b'w'  # Forward
             self.get_logger().info('Forward (i)')
         elif linear < 0:
-            cmd = b'>'  # Backward
+            cmd = b's'  # Backward
             self.get_logger().info('Backward (<)')
         elif angular > 0:
-            cmd = b'k'  # Turn Left
+            cmd = b'a'  # Turn Left
             self.get_logger().info('Turn Left (j)')
         elif angular < 0:
-            cmd = b';'  # Turn Right
+            cmd = b'd'  # Turn Right
             self.get_logger().info('Turn Right (l)')
         elif linear == 0 and angular == 0:
             cmd = b'x'  # Stop
