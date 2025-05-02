@@ -1,7 +1,7 @@
 #define RPWM 5  // Right PWM (Drive Motor)
 #define LPWM 6  // Left PWM (Drive Motor)
-#define REN 8   // Right Enable (Drive Motor)
-#define LEN 7   // Left Enable (Drive Motor)
+#define REN 7   // Right Enable (Drive Motor)
+#define LEN 8   // Left Enable (Drive Motor)
 
 #define sLPWM 9  // Steering Left PWM signal
 #define sRPWM 10 // Steering Right PWM signal
@@ -19,7 +19,7 @@ void setup() {
     pinMode(sLEN, OUTPUT);
     pinMode(sREN, OUTPUT);
 
-    digitalWrite(REN, HIGH); // Enable drive motors
+    digitalWrite(REN, HIGH); // Enable drive motorsc
     digitalWrite(LEN, HIGH);
 
     digitalWrite(sLEN, HIGH); // Enable steering motor
@@ -42,7 +42,7 @@ void controlMotors(char command) {
     switch (command) {
         case 'i': // Move Forward
             analogWrite(RPWM, speed);
-            //analogWrite(LPWM, 0);
+            analogWrite(LPWM, 0);
             break;
         case '<': // Move Backward
             analogWrite(RPWM, 0);
@@ -52,7 +52,7 @@ void controlMotors(char command) {
             digitalWrite(sLPWM, HIGH);
             digitalWrite(sRPWM, LOW);
             analogWrite(sLPWM, steer_speed);
-            delay(500); // Adjust based on testing
+            delay(1000); // Adjust based on testing
             analogWrite(sLPWM, 0);
             break;
         case 'l': // Turn Right (Brief Steering Adjustment)

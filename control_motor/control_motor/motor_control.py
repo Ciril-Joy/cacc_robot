@@ -8,28 +8,41 @@ class MotorControlNode(Node):
         super().__init__('motor_control')
         self.subscription = self.create_subscription(
             Twist, '/cmd_vel', self.listener_callback, 10)
-        self.serial_port = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
 
-    def listener_callback(self, msg):
+        try:
+            self.serial_port = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
+            self.get_logger().info('Serial port opened successfully.')
+        except serial.SerialException as e:
+            self.get_logger().error(f'Failed to open serial port: {e}')
+            exit(1)
+
+    def listener_callback(self, msg: Twist):
         linear = msg.linear.x
         angular = msg.angular.z
 
-        if angular > 0:
-            self.serial_port.write(b'k')  # Turn Left
-            print('j')
-        elif angular < 0:
-            self.serial_port.write(b';')  # Turn Right
-            print('l')
+        cmd = None
 
         if linear > 0:
-            self.serial_port.write(b'o')  # Forward
-            print('i')
+            cmd = b'o'  # Forward
+            self.get_logger().info('Forward (i)')
         elif linear < 0:
-            print('<')
-            self.serial_port.write(b'>')  # Backward
+            cmd = b'>'  # Backward
+            self.get_logger().info('Backward (<)')
+        elif angular > 0:
+            cmd = b'k'  # Turn Left
+            self.get_logger().info('Turn Left (j)')
+        elif angular < 0:
+            cmd = b';'  # Turn Right
+            self.get_logger().info('Turn Right (l)')
         elif linear == 0 and angular == 0:
-            print('x')
-            self.serial_port.write(b'x')  # Stop
+            cmd = b'x'  # Stop
+            self.get_logger().info('Stop (x)')
+
+        if cmd:
+            try:
+                self.serial_port.write(cmd)
+            except serial.SerialException as e:
+                self.get_logger().error(f'Failed to send serial command: {e}')
 
 def main(args=None):
     rclpy.init(args=args)
@@ -40,4 +53,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
