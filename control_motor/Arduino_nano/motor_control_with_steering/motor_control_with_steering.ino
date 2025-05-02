@@ -19,9 +19,6 @@ void setup() {
     pinMode(sLEN, OUTPUT);
     pinMode(sREN, OUTPUT);
 
-    digitalWrite(REN, HIGH); // Enable drive motorsc
-    digitalWrite(LEN, HIGH);
-
     digitalWrite(sLEN, HIGH); // Enable steering motor
     digitalWrite(sREN, HIGH);
 
@@ -37,29 +34,37 @@ void loop() {
 
 void controlMotors(char command) {
     int speed = 150;  // Adjust speed (0-255)
-    int steer_speed = 100; // Steering motor speed
+    int steer_speed = 200; // Steering motor speed
 
     switch (command) {
         case 'w': // Move Forward
+            digitalWrite(REN, LOW); // Enable drive motorsc
+            digitalWrite(LEN, HIGH);
             analogWrite(RPWM, speed);
             analogWrite(LPWM, 0);
             break;
         case 's': // Move Backward
+            digitalWrite(REN, HIGH); // Enable drive motorsc
+            digitalWrite(LEN, HIGH);
             analogWrite(RPWM, 0);
             analogWrite(LPWM, speed);
             break;
         case 'a': // Turn Left (Brief Steering Adjustment)
-            digitalWrite(sLPWM, HIGH);
-            digitalWrite(sRPWM, LOW);
+            //digitalWrite(sLPWM, HIGH);
+            //digitalWrite(sRPWM, LOW);
             analogWrite(sLPWM, steer_speed);
+            analogWrite(sRPWM, 0);
             delay(1000); // Adjust based on testing
+            analogWrite(sLPWM, 0);
             analogWrite(sLPWM, 0);
             break;
         case 'd': // Turn Right (Brief Steering Adjustment)
-            digitalWrite(sLPWM, LOW);
-            digitalWrite(sRPWM, HIGH);
+            //digitalWrite(sLPWM, LOW);
+            //digitalWrite(sRPWM, HIGH);
+            analogWrite(sLPWM, 0);
             analogWrite(sRPWM, steer_speed);
-            delay(500); // Adjust based on testing
+            delay(1000); // Adjust based on testing
+            analogWrite(sLPWM, 0);
             analogWrite(sRPWM, 0);
             break;
         case 'x': // Stop All
