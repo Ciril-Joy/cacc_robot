@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'cacc_gps = caccbot_gps.skg13bl_gps_node:main',            
         ],
     },
 )
