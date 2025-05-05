@@ -2,55 +2,63 @@
 
 import rclpy
 from rclpy.node import Node
-import serial
-import pynmea2
 from sensor_msgs.msg import NavSatFix, NavSatStatus
+from std_msgs.msg import Header
+import serial
 
-class SKG13BLGPSNode(Node):
+class GPSNode(Node):
     def __init__(self):
-        super().__init__('skg13bl_gps_node')
+        super().__init__('gps_node')
+        self.publisher_ = self.create_publisher(NavSatFix, '/fix', 10)
+        self.serial_port = serial.Serial('/dev/serial0', baudrate=9600, timeout=1)
+        self.timer = self.create_timer(0.5, self.read_gps)
 
-        self.declare_parameter('port', '/dev/serial1')
-        self.declare_parameter('baudrate', 9600)
+    def read_gps(self):
+        line = self.serial_port.readline().decode('ascii', errors='ignore').strip()
+        if line.startswith('$GPGGA'):
+            parts = line.split(',')
+            if len(parts) < 15 or parts[6] == '0':
+                return  # no fix
+            try:
+                msg = NavSatFix()
+                msg.header = Header()
+                msg.header.stamp = self.get_clock().now().to_msg()
+                msg.header.frame_id = 'gps'
 
-        port = self.get_parameter('port').get_parameter_value().string_value
-        baud = self.get_parameter('baudrate').get_parameter_value().integer_value
+                msg.status.status = NavSatStatus.STATUS_FIX
+                msg.status.service = NavSatStatus.SERVICE_GPS
 
-        self.serial_port = serial.Serial(port, baud, timeout=1.0)
-        self.publisher_ = self.create_publisher(NavSatFix, 'fix', 10)
-        self.timer = self.create_timer(0.5, self.read_gps_data)
+                msg.latitude = self.parse_lat(parts[2], parts[3])
+                msg.longitude = self.parse_lon(parts[4], parts[5])
+                msg.altitude = float(parts[9])
 
-        self.get_logger().info(f"Started SKG13BL GPS Node on {port} at {baud} baud.")
+                msg.position_covariance = [0.0] * 9
+                msg.position_covariance_type = NavSatFix.COVARIANCE_TYPE_UNKNOWN
 
-    def read_gps_data(self):
-        try:
-            line = self.serial_port.readline().decode('ascii', errors='replace')
-            if line.startswith('$GPGGA') or line.startswith('$GNGGA'):
-                msg = pynmea2.parse(line)
-                gps_msg = NavSatFix()
+                self.publisher_.publish(msg)
+                self.get_logger().info(f'Published: lat={msg.latitude:.6f}, lon={msg.longitude:.6f}, alt={msg.altitude:.2f}')
+            except Exception as e:
+                self.get_logger().error(f'Failed to parse GPGGA: {e}')
 
-                gps_msg.header.stamp = self.get_clock().now().to_msg()
-                gps_msg.header.frame_id = 'gps_link'
+    def parse_lat(self, raw_val, hemi):
+        if not raw_val:
+            return 0.0
+        degrees = float(raw_val[:2])
+        minutes = float(raw_val[2:])
+        value = degrees + minutes / 60.0
+        return -value if hemi == 'S' else value
 
-                gps_msg.status.status = NavSatStatus.STATUS_FIX
-                gps_msg.status.service = NavSatStatus.SERVICE_GPS
-
-                gps_msg.latitude = msg.latitude
-                gps_msg.longitude = msg.longitude
-                gps_msg.altitude = float(msg.altitude)
-
-                # Optionally set covariance or leave it unknown
-                gps_msg.position_covariance_type = NavSatFix.COVARIANCE_TYPE_UNKNOWN
-
-                self.get_logger().info(f"Publishing GPS: {gps_msg.latitude}, {gps_msg.longitude}")
-                self.publisher_.publish(gps_msg)
-
-        except Exception as e:
-            self.get_logger().warn(f"Failed to read GPS: {e}")
+    def parse_lon(self, raw_val, hemi):
+        if not raw_val:
+            return 0.0
+        degrees = float(raw_val[:3])
+        minutes = float(raw_val[3:])
+        value = degrees + minutes / 60.0
+        return -value if hemi == 'W' else value
 
 def main(args=None):
     rclpy.init(args=args)
-    node = SKG13BLGPSNode()
+    node = GPSNode()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
