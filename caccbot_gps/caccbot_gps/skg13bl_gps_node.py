@@ -42,6 +42,7 @@ class SKG13BLGPSNode(Node):
                 # Optionally set covariance or leave it unknown
                 gps_msg.position_covariance_type = NavSatFix.COVARIANCE_TYPE_UNKNOWN
 
+                self.get_logger().info(f"Publishing GPS: {gps_msg.latitude}, {gps_msg.longitude}")
                 self.publisher_.publish(gps_msg)
 
         except Exception as e:
