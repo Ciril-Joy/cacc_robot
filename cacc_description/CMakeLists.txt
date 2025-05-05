@@ -7,6 +7,20 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+
+# Find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_ros REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(robot_localization REQUIRED)
+find_package(robot_state_publisher REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(urdf REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(std_msgs REQUIRED)
+
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -28,5 +42,14 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
+# Include directories
+include_directories(
+  include
+)
+
+install(
+  DIRECTORY launch urdf
+  DESTINATION share/${PROJECT_NAME}/
+)
 
 ament_package()
