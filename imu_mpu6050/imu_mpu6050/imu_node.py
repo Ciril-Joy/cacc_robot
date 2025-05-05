@@ -5,7 +5,6 @@ from rclpy.node import Node
 from sensor_msgs.msg import Imu
 from mpu6050 import mpu6050
 import math
-import tf_transformations
 from geometry_msgs.msg import Quaternion
 from builtin_interfaces.msg import Time
 from rclpy.time import Time as ROS2Time
@@ -21,7 +20,7 @@ class MPU6050Node(Node):
     def timer_callback(self):
         accel_data = self.sensor.get_accel_data()
         gyro_data = self.sensor.get_gyro_data()
-
+    
         imu_msg = Imu()
 
         # Timestamp
