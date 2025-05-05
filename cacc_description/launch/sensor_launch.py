@@ -1,27 +1,42 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
+import os
+from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
-    return LaunchDescription([
-        # IMU driver node (MPU6050)
-        Node(
-            package='imu_mpu6050',  # Package that contains the MPU6050 driver
-            executable='imu_node',  # Executable node that runs the MPU6050 driver
-            name='imu_node',
-            output='screen',
-            remappings=[
-                ('/imu/data', '/imu')  # Ensures consistency for robot_localization
-            ]
-        ),
+    navsat_transform_params = os.path.join(
+        get_package_share_directory('cacc_description'), 'config', 'navsat_transform.yaml'
+    )
 
-        # GPS driver node (example, replace with actual package)
+    ekf_params = os.path.join(
+        get_package_share_directory('cacc_description'), 'config', 'ekf.yaml'
+    )
+
+    return LaunchDescription([
         Node(
-            package='caccbot_gps',  # Replace with actual package name
-            executable='cacc_gps',   # Replace with actual node executable
-            name='gps_node',
+            package='imu_mpu6050',
+            executable='imu_node',
+            name='imu_node',
+            output='screen'
+        ),
+        Node(
+            package='caccbot_gps',
+            executable='cacc_gps',
+            name='cacc_gps',
+            output='screen'
+        ),
+        Node(
+            package='robot_localization',
+            executable='navsat_transform_node',
+            name='navsat_transform_node',
             output='screen',
-            remappings=[
-                ('/gps/fix', '/fix')  # Standard ROS GPS topic
-            ]
+            parameters=[navsat_transform_params]
+        ),
+        Node(
+            package='robot_localization',
+            executable='ekf_filter_node',
+            name='ekf_filter_node',
+            output='screen',
+            parameters=[ekf_params]
         )
     ])
