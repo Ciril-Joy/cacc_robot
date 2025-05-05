@@ -10,7 +10,7 @@ class SKG13BLGPSNode(Node):
     def __init__(self):
         super().__init__('skg13bl_gps_node')
 
-        self.declare_parameter('port', '/dev/serial0')
+        self.declare_parameter('port', '/dev/serial1')
         self.declare_parameter('baudrate', 9600)
 
         port = self.get_parameter('port').get_parameter_value().string_value
