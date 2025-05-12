@@ -1,31 +1,26 @@
 navsat_transform_node:
   ros__parameters:
-    frequency: 20.0  # Match your IMU or GPS publishing rate
-    delay: 0.0
-
-    use_odometry_yaw: false  # Don't rely on wheel odometry for heading
-    use_local_cartesian: false
-
+    frequency: 30.0
+    delay: 6.0 # Wait for GPS to stabilize a bit at startup
+    magnetic_declination_radians: 0.0244346095 #  Get this for your location (e.g., from https://www.ngdc.noaa.gov/geomag/calculators/magcalc.shtml)
+                                        # Positive for East declination, Negative for West
+    yaw_offset: 1.570796327 # 90 degrees: If your IMU's yaw is 0 when facing East, and you want 0 to be North. Adjust as needed.
+                            # 0.0 if IMU yaw is 0 when facing North.
+    zero_altitude: true # Set to true if your GPS gives altitude relative to sea level and you want local Z=0
+    # datum: "WGS84" # This is the default and usually correct for GPS
+    broadcast_cartesian_transform: true # Publish odom->utm or map->utm transform
+    broadcast_cartesian_transform_as_parent_frame: true # Set to true to make the UTM frame the parent of 'map' or 'odom'
+                                                      # Often easier to manage TF tree this way
     publish_filtered_gps: true
-    publish_debug_topics: false
-    publish_tf: true
+    use_odometry_yaw: false # If false, uses IMU yaw. If true, uses yaw from /odometry/filtered (global EKF)
+                            # Start with false. Can set to true after global EKF is stable.
+    wait_for_datum: false # If you have a survey_in GPS, set this to true and provide datum service. For typical GPS, false.
 
-    gps_topic: "/fix"
-    imu_topic: "/imu/data"
-    odometry_topic: "/odometry/filtered"
-
-    world_frame: "odom"
-    base_link_frame: "base_link"
-    imu_frame: "imu_link"
-
-    magnetic_declination_radians: 0.0  # Set this if you want magnetic heading corrections
-    yaw_offset: 0.0
-    zero_altitude: false
-    broadcast_utm_transform: false
-    broadcast_cartesian_transform: true
-
-    # Use this if your GPS is not at the center of your robot
-    # If it's mounted at the robot's center, leave it at 0
-    gps_offset_x: 0.0
-    gps_offset_y: 0.0
-    gps_offset_z: 0.0
+    # Ensure these topics match your EKF outputs and sensor inputs
+    # imu_topic: /imu/data
+    gps_fix_topic: /fix
+    odometry_topic: /odometry/global_ekf_navsat_input # Input from global EKF for precise datum
+    output_odometry_topic: /odometry/gps # Output used by global EKF
+    # CHANGES 
+    # CHANGES odometry_topic: /odometry/filtered # This is the output of ekf_global_node
+    # CHANGES # output_odometry_topic: /odometry/gps # This will be an input to ekf_global_node 

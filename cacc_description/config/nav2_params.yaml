@@ -1,0 +1,380 @@
+# Global Parameters
+# These are generally common across all Nav2 servers
+# amcl: # Only if you are using AMCL for localization instead of SLAM + robot_localization
+#   ros__parameters:
+#     use_map_topic: true # If using SLAM, AMCL is usually not needed.
+#     # ... other AMCL params
+#     # For SLAM, AMCL is typically disabled or not run.
+
+# Set use_sim_time to true if you are using a simulation, false for real robot
+# This is typically passed as a launch argument, but can be set here as a default.
+# use_sim_time: false
+
+bt_navigator:
+  ros__parameters:
+    use_sim_time: false # CHANGEME if using sim
+    global_frame: map
+    robot_base_frame: base_link
+    odom_topic: /odometry/global_ekf # CHANGEME: This should be your final fused odometry from robot_localization
+    bt_loop_duration: 10 # ms
+    default_server_timeout: 20 # seconds
+    # Behavior Tree plugins - Default Nav2 BTs are usually good to start
+    plugin_lib_names:
+      - nav2_compute_path_to_pose_action_bt_node
+      - nav2_compute_path_through_poses_action_bt_node
+      - nav2_follow_path_action_bt_node
+      - nav2_back_up_action_bt_node
+      - nav2_spin_action_bt_node
+      - nav2_wait_action_bt_node
+      - nav2_clear_costmap_service_bt_node
+      - nav2_is_stuck_condition_bt_node
+      - nav2_goal_reached_condition_bt_node
+      - nav2_goal_updated_condition_bt_node
+      - nav2_globally_updated_goal_condition_bt_node
+      - nav2_is_path_valid_condition_bt_node
+      - nav2_initial_pose_received_condition_bt_node
+      - nav2_reinitialize_global_localization_service_bt_node
+      - nav2_rate_controller_bt_node
+      - nav2_distance_controller_bt_node
+      - nav2_speed_controller_bt_node
+      - nav2_truncate_path_action_bt_node
+      - nav2_goal_updater_node_bt_node
+      - nav2_recovery_node_bt_node
+      - nav2_pipeline_sequence_bt_node
+      - nav2_round_robin_node_bt_node
+      - nav2_transform_available_condition_bt_node
+      - nav2_time_expired_condition_bt_node
+      - nav2_distance_traveled_condition_bt_node
+      - nav2_single_trigger_bt_node
+      - nav2_is_battery_low_condition_bt_node
+      - nav2_navigate_gen_waypoints_service_bt_node
+    # Default BT XML file paths
+    default_nav_to_pose_bt_xml: "$(find-pkg-share nav2_bt_navigator)/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml"
+    default_nav_through_poses_bt_xml: "$(find-pkg-share nav2_bt_navigator)/behavior_trees/navigate_through_poses_w_replanning_and_recovery.xml"
+
+controller_server:
+  ros__parameters:
+    use_sim_time: false # CHANGEME if using sim
+    controller_frequency: 20.0 # Hz, how often to send commands
+    min_x_velocity_threshold: 0.001 # m/s
+    min_y_velocity_threshold: 0.001 # m/s (usually 0 for non-holonomic)
+    min_theta_velocity_threshold: 0.001 # rad/s
+    failure_tolerance: 0.3 # seconds, time after which a control effort is considered failed
+    progress_checker_plugin: "progress_checker" # "progress_checker" or "simple_progress_checker"
+    goal_checker_plugins: ["goal_checker"] # "simple_goal_checker" or "goal_checker"
+    controller_plugins: ["FollowPath"] # List of controller plugins
+
+    # Progress checker parameters
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.5 # meters
+      movement_time_allowance: 10.0 # seconds
+
+    # Goal checker parameters
+    goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25 # meters, CHANGEME based on desired precision
+      yaw_goal_tolerance: 0.25 # radians, CHANGEME (approx 15 degrees)
+      stateful: True # if true, goal checker will remain true if it ever becomes true
+
+    # Controller Plugin: DWB (Dynamic Window Approach)
+    # For Ackermann, TEB might be better but is more complex to tune. DWB can work if your cmd_vel converter handles it.
+    FollowPath:
+      plugin: "dwb_core::DWBLocalPlanner"
+      debug_trajectory_details: false # Set to true for DWB visualization
+      # Robot Kinematic Parameters (CHANGEME for your robot!)
+      max_vel_x: 0.5  # m/s, Maximum forward speed
+      min_vel_x: 0.05 # m/s, Minimum forward speed (Ackermann might not turn well at 0, or have a min speed)
+      max_vel_y: 0.0  # m/s, Should be 0 for non-holonomic
+      min_vel_y: 0.0  # m/s, Should be 0 for non-holonomic
+      max_vel_theta: 0.8 # rad/s, Maximum angular velocity
+      min_vel_theta: -0.8 # rad/s, Minimum angular velocity (if it can turn both ways)
+      acc_lim_x: 1.0    # m/s^2
+      acc_lim_y: 0.0    # m/s^2
+      acc_lim_theta: 2.0 # rad/s^2
+      decel_lim_x: -1.0   # m/s^2 (use negative for deceleration limit)
+      decel_lim_y: 0.0    # m/s^2
+      decel_lim_theta: -2.0 # rad/s^2
+      min_speed_xy: 0.05 # m/s, Minimum translational speed (related to min_vel_x)
+      max_speed_xy: 0.5 # m/s, Maximum translational speed
+      min_speed_theta: 0.1 # rad/s Minimum rotational speed when turning (if applicable)
+
+      # Trajectory Generator Parameters
+      sim_time: 2.0       # seconds, how far to project trajectories
+      # For Ackermann, you might need a non-zero vx_samples if min_vel_x is > 0
+      vx_samples: 10       # Number of samples for x velocity
+      vy_samples: 1        # Number of samples for y velocity (1 for non-holonomic)
+      vtheta_samples: 20   # Number of samples for angular velocity
+      sim_granularity: 0.05 # Spacing between points in generated trajectory
+      angular_sim_granularity: 0.025 # Spacing for angular parts of trajectory
+      transform_tolerance: 0.2 # seconds
+      # DWB Critics (Scoring functions for trajectories) - these are examples, tune them!
+      # Names must be unique
+      default_critic_namespaces: ["PathDist", "GoalDist", "ObstacleFootprint"]
+      PathDist: # Indented under FollowPath
+        scale: 99.0
+        plugin: "dwb_critics::PathDistCritic"
+      GoalDist: # Indented under FollowPath
+        scale: 24.0
+        plugin: "dwb_critics::GoalDistCritic"
+      ObstacleFootprint: # Indented under FollowPath
+        scale: 0.02
+        plugin: "dwb_critics::ObstacleFootprintCritic"
+        max_scaling_factor: 0.2
+        scaling_speed: 0.1
+      
+      # Twirling: # Penalizes spinning in place (can be good for Ackermann)
+      #   scale: 5.0
+      #   plugin: "dwb_critics::TwirlingCritic"
+      # PathAlign: # Tries to keep the robot aligned with the path direction
+      #   scale: 10.0
+      #   plugin: "dwb_critics::PathAlignCritic"
+      #   forward_point_distance: 0.325 # meters
+      # GoalAlign: # Tries to align with goal orientation at the end
+      #   scale: 10.0
+      #   plugin: "dwb_critics::GoalAlignCritic"
+      #   forward_point_distance: 0.325 # meters
+      # PreferForward: # Small penalty for reversing if not necessary
+      #   scale: 5.0
+      #   plugin: "dwb_critics::PreferForwardCritic"
+
+planner_server:
+  ros__parameters:
+    use_sim_time: false # CHANGEME if using sim
+    expected_planner_frequency: 1.0 # Hz, How often to replan if stuck (or use -1.0 for no periodic replanning)
+    planner_plugins: ["GridBased"] # List of planner plugins
+
+    GridBased:
+      plugin: "nav2_smac_planner/SmacPlannerHybrid" # Hybrid-A* planner, good for non-holonomic
+      # plugin: "nav2_navfn_planner/NavfnPlanner" # Simpler, older planner
+      tolerance: 0.5 # meters, goal tolerance for planner
+      downsample_costmap: false # If true, uses a lower resolution costmap for planning (faster but less accurate)
+      downsampling_factor: 1
+      # SMAC Planner Hybrid (A*) Parameters (if using SmacPlannerHybrid)
+      allow_unknown: true # Allow planning through unknown space
+      max_iterations: 1000000 # or -1 for unlimited
+      max_on_approach_iterations: 1000
+      max_planning_time: 5.0 # seconds
+      motion_model_for_search: "DUBIN" # "DUBIN" or "REEDS_SHEPP" for car-like robots.
+                                       # "STATE_LATTICE" for more complex custom motion primitives.
+      angle_quantization_bins: 72 # Number of discrete orientations (for Hybrid A*)
+      analytic_expansion_ratio: 3.5
+      minimum_turning_radius: 0.4 # meters, CHANGEME: CRITICAL for Ackermann steering. Set to your robot's physical limit.
+      reverse_penalty: 2.0 # Penalty for reversing (higher means less likely to reverse)
+      analytic_expansion_max_length: 3.0 # meters
+      # NavFn Planner Parameters (if using NavfnPlanner)
+      # use_astar: false # true for A*, false for Dijkstra
+
+recoveries_server:
+  ros__parameters:
+    use_sim_time: false # CHANGEME if using sim
+    costmap_topic: local_costmap/costmap_raw # Topic for costmap used by recoveries
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 10.0 # Hz
+    recovery_plugins: ["spin", "backup", "wait"]
+
+    spin:
+      plugin: "nav2_recoveries/Spin"
+      simulation_ahead_time: 2.0 # seconds
+      max_rotational_vel: 1.0 # rad/s
+      rotational_acc_lim: 3.2 # rad/s^2
+      tolerance: 0.3 # rad
+      angular_dist_threshold: 0.3 # rad, how much to spin
+      # For Ackermann, spinning might not be effective or possible.
+      # Consider reducing its use or replacing with a different recovery.
+
+    backup:
+      plugin: "nav2_recoveries/BackUp"
+      backup_dist: 0.3 # meters, CHANGEME: How far to back up
+      backup_speed: 0.05 # m/s, CHANGEME: Speed for backing up
+      simulation_ahead_time: 2.0 # seconds
+      tolerance: 0.1 # meters
+
+    wait:
+      plugin: "nav2_recoveries/Wait"
+      duration: 10.0 # seconds
+      simulation_ahead_time: 2.0 # seconds
+
+# Global Costmap: Used for global path planning
+global_costmap:
+  global_costmap: # Namespace for parameters
+    ros__parameters:
+      use_sim_time: false # CHANGEME if using sim
+      global_frame: map     # Frame of the map
+      robot_base_frame: base_link # Your robot's base frame
+      update_frequency: 1.0 # Hz, How often to update the global costmap
+      publish_frequency: 1.0 # Hz, How often to publish the global costmap
+      # Footprint of the robot (CHANGEME: define accurately for your robot)
+      # Example for a rectangular robot: (length, width) centered at base_link
+      # Order matters: counter-clockwise from front-right.
+      # Assume base_link is at the center of the robot.
+      # If base_link is at rear axle, adjust accordingly.
+      # For Ackermann, base_link is often at the center of the rear axle.
+      # This example is for a 0.5m long, 0.3m wide robot centered at base_link
+      footprint: "[[0.25, 0.15], [0.25, -0.15], [-0.25, -0.15], [-0.25, 0.15]]" # CHANGEME
+      # robot_radius: 0.25 # Alternative to footprint for circular robots
+
+      # Costmap layers (plugins)
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      # plugins: ["static_layer", "voxel_layer", "inflation_layer"] # If using VoxelLayer for 3D obstacles
+
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True # Crucial for SLAM: use map from /map topic
+        enabled: True
+
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan # Define your sensor sources
+        scan:
+          topic: /scan # CHANGEME: Your Lidar topic
+          sensor_frame: laser # CHANGEME: Frame of your Lidar
+          observation_persistence: 0.0 # seconds, 0.0 means only use last scan
+          expected_update_rate: 0.4 # seconds, time between sensor readings
+          data_type: "LaserScan"
+          clearing: True
+          marking: True
+          max_obstacle_height: 2.0 # meters, obstacles above this are ignored
+          min_obstacle_height: 0.0 # meters, obstacles below this are ignored
+          obstacle_range: 5.0      # meters, max range to consider obstacles from sensor
+          raytrace_range: 6.0      # meters, max range to raytrace for clearing
+          # footprint_clearing_enabled: true # If true, clears space within robot footprint
+
+      # Voxel Layer (alternative to ObstacleLayer for 3D obstacles, if you have a 3D Lidar/depth camera)
+      # voxel_layer:
+      #   plugin: "nav2_costmap_2d::VoxelLayer"
+      #   enabled: True
+      #   publish_voxel_map: True
+      #   origin_z: 0.0
+      #   z_resolution: 0.05
+      #   z_voxels: 16
+      #   max_obstacle_height: 2.0
+      #   mark_threshold: 0
+      #   unknown_threshold: 15 # -1 for no unknown space propagation
+      #   observation_sources: scan # or depth_camera etc.
+      #   scan:
+      #     topic: /scan
+      #     sensor_frame: lidar_link
+      #     observation_persistence: 0.0
+      #     expected_update_rate: 0.4
+      #     data_type: "LaserScan" # or PointCloud2
+      #     clearing: True
+      #     marking: True
+      #     min_obstacle_height: 0.08
+      #     max_obstacle_height: 2.0
+      #     obstacle_range: 5.0
+      #     raytrace_range: 6.0
+
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        enabled: True
+        cost_scaling_factor: 3.0  # Exponential rate of decay; lower values make inflated costs drop slower
+        inflation_radius: 0.5  # meters, CHANGEME: Max distance from obstacle where costs are inflated
+                                  # Should be > robot_radius if using circular, or enough to cover footprint corners
+
+      # Always last
+      always_send_full_costmap: True # Important for Rviz and other tools
+
+# Local Costmap: Used for local trajectory planning and obstacle avoidance
+local_costmap:
+  local_costmap: # Namespace for parameters
+    ros__parameters:
+      use_sim_time: false # CHANGEME if using sim
+      global_frame: odom    # Typically odom for local_costmap, as it's robot-centric and smooth
+      robot_base_frame: base_link # Your robot's base frame
+      update_frequency: 5.0 # Hz, How often to update the local costmap
+      publish_frequency: 2.0 # Hz, How often to publish the local costmap
+      width: 3                # meters, CHANGEME: Width of the local costmap window
+      height: 3               # meters, CHANGEME: Height of the local costmap window
+      resolution: 0.05        # meters/pixel, Resolution of the local costmap
+      rolling_window: true    # Local costmap moves with the robot
+      # Footprint (can be same as global or specific if needed)
+      footprint: "[[0.25, 0.15], [0.25, -0.15], [-0.25, -0.15], [-0.25, 0.15]]" # CHANGEME
+
+      # Costmap layers (plugins)
+      plugins: ["obstacle_layer", "inflation_layer"] # Typically no static_layer in local costmap
+      # plugins: ["voxel_layer", "inflation_layer"] # If using VoxelLayer
+
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan: # Same sensor configuration as in global_costmap usually
+          topic: /scan
+          sensor_frame: laser
+          observation_persistence: 0.0
+          expected_update_rate: 0.4
+          data_type: "LaserScan"
+          clearing: True
+          marking: True
+          max_obstacle_height: 2.0
+          min_obstacle_height: 0.0
+          obstacle_range: 3.0 # Can be shorter than global for performance
+          raytrace_range: 3.5 # Can be shorter than global
+          # footprint_clearing_enabled: true
+
+      # Voxel Layer (if used)
+      # voxel_layer:
+      #   plugin: "nav2_costmap_2d::VoxelLayer"
+      #   enabled: True
+      #   # ... same params as in global_costmap's voxel_layer, but can be tuned for local window ...
+
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        enabled: True
+        cost_scaling_factor: 3.0
+        inflation_radius: 0.5 # meters, CHANGEME
+
+      # Always last
+      always_send_full_costmap: True
+
+# Waypoint follower (if you use the waypoint following feature)
+waypoint_follower:
+  ros__parameters:
+    use_sim_time: false # CHANGEME if using sim
+    loop_rate: 20 # Hz
+    stop_on_failure: false # If true, stops following waypoints if one fails
+    global_frame: map # Should match your global frame
+
+# Optional: If you use a path smoother
+# smoother_server:
+#   ros__parameters:
+#     use_sim_time: false # CHANGEME if using sim
+#     smoother_plugins: ["SmoothPath"]
+#     SmoothPath:
+#       plugin: "nav2_smoother::SimpleSmoother" # Other options: nav2_constrained_smoother::ConstrainedSmoother
+#       tolerance: 1.0e-10
+#       max_iterations: 1000
+#       w_data: 0.2
+#       w_smooth: 0.3
+#       # For ConstrainedSmoother, additional params like kernel_size, etc.
+
+# Behavior Server (less commonly modified, but needs to be present)
+behavior_server:
+  ros__parameters:
+    use_sim_time: false # CHANGEME if using sim
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    robot_base_frame: base_link
+    global_frame: map # Should match your global frame
+    transform_timeout: 0.1 # seconds
+    # List of behavior plugins, default are Spin, Backup, Wait
+    behavior_plugins: ["spin", "backup", "wait"]
+    spin:
+      plugin: "nav2_behaviors/Spin"
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+    wait:
+      plugin: "nav2_behaviors/Wait"
+    # Common parameters for behaviors
+    local_costmap_topic: local_costmap/costmap_raw # Likely redundant if costmap_topic is set
+    global_costmap_topic: global_costmap/costmap_raw
+
+# Costmap Filters Info Server (for applying filters to costmaps, advanced)
+# costmap_filters_info_server:
+#   ros__parameters:
+#     use_sim_time: false # CHANGEME if using sim
+#     # type: 0 # Filter type, e.g., KeepoutFilter
+#     # filter_info_topic: "/costmap_filters/filter_info"
+#     # mask_topic: "/costmap_filters/mask"

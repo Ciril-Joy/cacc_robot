@@ -1,0 +1,76 @@
+slam_toolbox:
+  ros__parameters:
+    # Plugin params
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_trust_region_strategy: LEVENBERG_MARQUARDT
+    ceres_dogleg_type: TRADITIONAL_DOGLEG
+    ceres_loss_function: None # HuberLoss, CauchyLoss
+
+    # ROS Parameters
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_link
+    scan_topic: /scan # YOUR LIDAR SCAN TOPIC
+    # Use /odometry/global_ekf if your EKF provides a good map->odom or odom->base_link transform
+    # If EKF only provides odom->base_link, and slam_toolbox provides map->odom, this can be tricky.
+    # Simplest if SLAM takes /scan and TF, and EKF provides the full map->base_link through map->odom->base_link.
+    # However, slam_toolbox typically *provides* map->odom.
+    # Let robot_localization provide map->odom, and slam_toolbox just uses the TF tree.
+    # This means slam_toolbox will align its map to the `map` frame from robot_localization.
+    # To achieve this, set `use_map_odom_transform: false` if EKF provides map->odom
+    # OR, if slam_toolbox provides map->odom, ensure EKF (global) is set to NOT publish map->odom.
+    # The common setup:
+    # robot_localization global_ekf: publishes map->odom
+    # robot_localization local_ekf: publishes odom->base_link
+    # slam_toolbox: uses existing TF (map->odom->base_link) and aligns map to it.
+    # OR
+    # slam_toolbox: publishes map->odom
+    # robot_localization local_ekf: publishes odom->base_link
+    # robot_localization global_ekf: uses odometry from local_ekf and GPS, aligns to 'map' frame.
+    # For your setup, let robot_localization (global EKF) publish map->odom.
+    # SLAM toolbox will then use this TF to place scans correctly in the map frame.
+    # So, make sure global EKF's publish_tf is true.
+    # SLAM toolbox `map_frame` should be `map` and `odom_frame` should be `odom`.
+    # It will subscribe to TF to get the transform between `odom` and `base_link`.
+
+    use_scan_matching: true
+    use_scan_barycenter: true
+    minimum_travel_distance: 0.2 # meters
+    minimum_travel_heading: 0.17 # radians (approx 10 degrees)
+    scan_buffer_size: 10
+    scan_buffer_maximum_scan_distance: 10.0 # meters
+    link_match_minimum_response_fine: 0.6
+    link_scan_maximum_distance: 1.5
+    loop_match_minimum_response_coarse: 0.6
+    loop_match_maximum_distance: 2.0
+    # For outdoor, you might need larger values if features are sparse
+    # Or rely more on GPS for global consistency, less on Lidar loop closure
+
+    do_loop_closing: true
+    loop_search_maximum_distance: 8.0 # meters
+    # Correlation parameters - CorrelationScore
+    correlation_search_space_dimension: 0.5 # meters
+    correlation_search_space_resolution: 0.01 # meters
+    correlation_search_space_smear_deviation: 0.03 # meters
+    # Correlation parameters - LoopClosure
+    loop_search_space_dimension: 8.0 # meters
+    loop_search_space_resolution: 0.05 # meters
+    loop_search_space_smear_deviation: 0.03 # meters
+    # Scan Matcher parameters
+    distance_variance_penalty: 0.5 # (linear)
+    angle_variance_penalty: 1.0 # (angular)
+
+    # Other settings
+    map_resolution: 0.05 # meters per pixel
+    map_update_interval: 2.0 # seconds
+    transform_publish_period: 0.05 # seconds (20Hz) - only if it's publishing map->odom
+    map_publish_period: 5.0 # seconds
+    tf_buffer_duration: 30. # seconds
+
+    mode: mapping # or localization (if loading a pre-built map)
+
+    # If using IMU data with slam_toolbox for better orientation in scan matching
+    # imu_topic: /imu/data
+    # use_imu_data: true # Set to true if you want to use IMU for SLAM

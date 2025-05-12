@@ -48,7 +48,10 @@
              izz="${2*m/5 * r*r}" />
   </xacro:macro>
 
-  <link name="base_footprint"/>
+  <link name="world_dummy_link" />
+
+
+
 
   <link name="base_link">
     <visual>
@@ -70,10 +73,10 @@
     </inertial>
   </link>
 
-  <joint name="base_footprint_joint" type="fixed">
-    <parent link="base_footprint"/>
+  <joint name="world_to_base_joint" type="fixed">
+    <parent link="world_dummy_link"/>
     <child link="base_link"/>
-    <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
   <xacro:macro name="wheel" params="prefix"> <link name="${prefix}_wheel_link">
@@ -213,7 +216,7 @@
     <origin xyz="-0.2 0 ${chassis_height/2 + 0.015}" rpy="0 0 0"/>
   </joint>
 
-  <link name="lidar_link">
+  <link name="laser">
      <visual>
        <geometry>
          <cylinder radius="0.05" length="0.07"/>
@@ -231,7 +234,7 @@
   </link>
   <joint name="lidar_joint" type="fixed">
     <parent link="base_link"/>
-    <child link="lidar_link"/>
+    <child link="laser"/>
     <origin xyz="${chassis_length/2 - 0.1} 0 ${chassis_height/2 + 0.035}" rpy="0 0 0"/>
   </joint>
 

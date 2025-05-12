@@ -33,7 +33,7 @@ void loop() {
 }
 
 void controlMotors(char command) {
-    int speed = 150;  // Adjust speed (0-255)
+    int speed = 100;  // Adjust speed (0-255)
     int steer_speed = 200; // Steering motor speed
 
     switch (command) {
