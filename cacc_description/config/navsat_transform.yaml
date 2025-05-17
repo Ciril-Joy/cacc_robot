@@ -19,7 +19,7 @@ navsat_transform_node:
       true # If false, uses IMU yaw. If true, uses yaw from /odometry/filtered (global EKF)
       # Start with false. Can set to true after global EKF is stable.
     wait_for_datum: false # If you have a survey_in GPS, set this to true and provide datum service. For typical GPS, false.
-
+    base_link_frame: "base_link" # ADD THIS (or ensure it's there)
     # Ensure these topics match your EKF outputs and sensor inputs
     imu_topic: /imu/data
     gps_fix_topic: /fix
