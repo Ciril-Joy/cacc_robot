@@ -13,8 +13,7 @@ ekf_filter_node_global: # Renamed to avoid conflicts
     odom_frame: odom    # Local, continuous frame (output of ekf_local)
     base_link_frame: base_link # Robot's base
     world_frame: map    # For this global EKF, world_frame is map
-    publish_tf: true   
-         # CRITICAL: This MUST be true for it to publish map->odom
+    publish_tf: true   # CRITICAL: This MUST be true for it to publish map->odom
     # --- Odometry from local EKF ---
     odom0: /odometry/local_ekf # This is the output of ekf_local_node
                             # Name it something like /odometry/local_ekf if you change the output topic of ekf_local

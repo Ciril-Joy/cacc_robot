@@ -47,12 +47,13 @@ def generate_launch_description():
             name='navsat_transform_node',
             output='screen',
             parameters=[os.path.join(config_dir, 'navsat_transform.yaml')],
-            ros_arguments=['--log-level', 'debug'], # ADD THIS            
+            ros_arguments=['--log-level', 'debug'], # ADD THIS
             remappings=[('imu', '/imu/data'), # Default is /imu, remap if yours is /imu/data
                         ('gps/fix', '/fix'),
                         ('gps/filtered', '/gps/filtered'), # Output for visualization
                         ('odometry/gps', '/odometry/gps'), # Output for global EKF
-                        ('odometry/filtered', 'odometry/global_ekf_navsat_input')] # Input from global EKF
+                        ('odometry/filtered', 'odometry/global_ekf_navsat_input'),
+                        ('odometry/filtered', '/odometry/global_ekf')] # CHANGED HERE                        # Input from global EKF
                                                                                    # This creates a loop for datum correction
         ),
 
