@@ -81,10 +81,7 @@ class MPU6050Node(Node):
         self.publisher_.publish(imu_msg)
 
         self.get_logger().info(
-            'IMU data published.',
-            throttle_duration_sec=1.0,
-            throttle_time_source_type=ClockType.STEADY_TIME # CORRECTED HERE
-        )
+            'IMU data published.')
 
 def main(args=None):
     rclpy.init(args=args)
